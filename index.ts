@@ -211,6 +211,16 @@ if (TRANSPORT !== 'stdio') {
   });
 }
 
+// Shared error schema
+const ERROR_SCHEMA = {
+  type: 'object',
+  properties: {
+    error: { type: 'string', description: 'Error message' },
+    code: { type: 'number', description: 'HTTP status code' }
+  },
+  required: ['error', 'code']
+};
+
 // Tool definition for OFFX search_drugs
 const SEARCH_DRUGS_TOOL = {
   name: 'search_drugs',
@@ -222,10 +232,33 @@ const SEARCH_DRUGS_TOOL = {
     },
     required: ['drug']
   },
+  responseSchema: {
+    type: 'object',
+    properties: {
+      drugs: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            drug_id: { type: 'string' },
+            drug_main_name: { type: 'string' },
+            drug_other_names: { type: 'array', items: { type: 'string' } },
+            drug_phase: { type: 'string' },
+            drug_molecule_type: { type: 'string' },
+            drug_modalities: { type: 'array', items: { type: 'string' } },
+            chembl_id: { type: 'string' }
+          },
+          required: ['drug_id', 'drug_main_name']
+        }
+      }
+    },
+    required: ['drugs']
+  },
   examples: [
     {
       description: 'Search for drugs by name',
-      usage: '{ "drug": "everolimus" }'
+      usage: '{ "drug": "everolimus" }',
+      response: '{ "drugs": [ { "drug_id": "99402", "drug_main_name": "everolimus" } ] }'
     }
   ]
 };
@@ -233,33 +266,52 @@ const SEARCH_DRUGS_TOOL = {
 // Tool definition for OFFX get_drugs
 const GET_DRUGS_TOOL = {
   name: 'get_drugs',
-  description: 'Get drugs by target_id, action_id, or adverse_event_id (provide exactly one) using the OFFX API.',
+  description: 'Get drugs by both target_id and action_id (together), or by adverse_event_id (alone).',
   inputSchema: {
     type: 'object',
     properties: {
-      target_id: { type: 'string', description: 'Target identifier (OFFX target_id, optional)' },
-      action_id: { type: 'string', description: 'Action identifier (OFFX action_id, optional)' },
-      adverse_event_id: { type: 'string', description: 'Adverse event identifier (OFFX adverse_event_id, optional)' },
-      page: { type: 'number', description: 'Page number (default: 1, optional)' }
+      target_id: { type: 'string', description: 'Target identifier (OFFX target_id)' },
+      action_id: { type: 'string', description: 'Action identifier (OFFX action_id)' },
+      adverse_event_id: { type: 'string', description: 'Adverse event identifier (OFFX adverse_event_id)' },
+      page: { type: 'number', description: 'Page number (default: 1)', default: 1 }
     },
-    anyOf: [
-      { required: ['target_id'] },
-      { required: ['action_id'] },
-      { required: ['adverse_event_id'] }
+    oneOf: [
+      { required: ['target_id', 'action_id'], not: { required: ['adverse_event_id'] } },
+      { required: ['adverse_event_id'], not: { required: ['target_id'] } }
     ]
-        },
-        examples: [
+  },
+  responseSchema: {
+    type: 'object',
+    properties: {
+      drugs: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            drug_id: { type: 'string' },
+            drug_main_name: { type: 'string' },
+            drug_other_names: { type: 'array', items: { type: 'string' } },
+            drug_phase: { type: 'string' },
+            drug_molecule_type: { type: 'string' },
+            drug_modalities: { type: 'array', items: { type: 'string' } },
+            chembl_id: { type: 'string' }
+          },
+          required: ['drug_id', 'drug_main_name']
+        }
+      }
+    },
+    required: ['drugs']
+  },
+  examples: [
     {
-      description: 'Get drugs by target id',
-      usage: '{ "target_id": "123" }'
+      description: 'By target and action',
+      usage: '{ "target_id": "123", "action_id": "456" }',
+      response: '{ "drugs": [ { "drug_id": "140448", "drug_main_name": "semaglutide" } ] }'
     },
     {
-      description: 'Get drugs by action id',
-      usage: '{ "action_id": "456" }'
-    },
-    {
-      description: 'Get drugs by adverse event id',
-      usage: '{ "adverse_event_id": "10001551" }'
+      description: 'By adverse event',
+      usage: '{ "adverse_event_id": "10001551" }',
+      response: '{ "drugs": [ { "drug_id": "140448", "drug_main_name": "semaglutide" } ] }'
     }
   ]
 };
@@ -294,18 +346,52 @@ const GET_ALERTS_TOOL = {
       { required: ['target_id', 'page'] }
     ]
   },
+  responseSchema: {
+    type: 'object',
+    properties: {
+      alerts: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            drug_id: { type: 'string' },
+            target_id: { type: 'string' },
+            action_id: { type: 'string' },
+            adverse_event_id: { type: 'string' },
+            ref_source_type: { type: 'string' },
+            alert_type: { type: 'string' },
+            alert_phase: { type: 'string' },
+            alert_level_evidence: { type: 'string' },
+            alert_onoff_target: { type: 'string' },
+            alert_severity: { type: 'string' },
+            alert_causality: { type: 'string' },
+            alert_species: { type: 'string' },
+            alert_date_from: { type: 'string' },
+            alert_date_to: { type: 'string' },
+            order_by_date: { type: 'string' },
+            order_by_adv: { type: 'string' }
+          },
+          required: ['drug_id', 'target_id', 'action_id', 'adverse_event_id', 'ref_source_type', 'alert_type', 'alert_phase', 'alert_level_evidence', 'alert_onoff_target', 'alert_severity', 'alert_causality', 'alert_species', 'alert_date_from', 'alert_date_to', 'order_by_date', 'order_by_adv']
+        }
+      }
+    },
+    required: ['alerts']
+  },
   examples: [
     {
       description: 'Get alerts for a drug',
-      usage: '{ "drug_id": "11204", "page": 1 }'
+      usage: '{ "drug_id": "11204", "page": 1 }',
+      response: '{ "alerts": [ { "drug_id": "11204", "target_id": "158", "action_id": "15", "adverse_event_id": "10001551", "ref_source_type": "clinical", "alert_type": "serious", "alert_phase": "postmarketing", "alert_level_evidence": "A", "alert_onoff_target": "on", "alert_severity": "severe", "alert_causality": "unknown", "alert_species": "human", "alert_date_from": "2020-01-01", "alert_date_to": "2020-12-31", "order_by_date": "2020-01-01", "order_by_adv": "2020-01-01" } ] }'
     },
     {
       description: 'Get alerts for a target',
-      usage: '{ "target_id": "158", "page": 1 }'
+      usage: '{ "target_id": "158", "page": 1 }',
+      response: '{ "alerts": [ { "drug_id": "11204", "target_id": "158", "action_id": "15", "adverse_event_id": "10001551", "ref_source_type": "clinical", "alert_type": "serious", "alert_phase": "postmarketing", "alert_level_evidence": "A", "alert_onoff_target": "on", "alert_severity": "severe", "alert_causality": "unknown", "alert_species": "human", "alert_date_from": "2020-01-01", "alert_date_to": "2020-12-31", "order_by_date": "2020-01-01", "order_by_adv": "2020-01-01" } ] }'
     },
     {
       description: 'Get alerts for a target with filters',
-      usage: '{ "target_id": "158", "page": 2, "alert_type": "serious" }'
+      usage: '{ "target_id": "158", "page": 2, "alert_type": "serious" }',
+      response: '{ "alerts": [ { "drug_id": "11204", "target_id": "158", "action_id": "15", "adverse_event_id": "10001551", "ref_source_type": "clinical", "alert_type": "serious", "alert_phase": "postmarketing", "alert_level_evidence": "A", "alert_onoff_target": "on", "alert_severity": "severe", "alert_causality": "unknown", "alert_species": "human", "alert_date_from": "2020-01-01", "alert_date_to": "2020-12-31", "order_by_date": "2020-01-01", "order_by_adv": "2020-01-01" } ] }'
     }
   ]
 };
@@ -327,22 +413,37 @@ const GET_SCORE_TOOL = {
       { required: ['target_id', 'action_id'] }
     ]
   },
+  responseSchema: {
+    type: 'object',
+    properties: {
+      score: { type: 'number' },
+      drug_id: { type: 'string' },
+      adverse_event_id: { type: 'string' },
+      target_id: { type: 'string' },
+      action_id: { type: 'string' }
+    },
+    required: ['score', 'drug_id', 'target_id', 'action_id']
+  },
   examples: [
     {
       description: 'Get drug_score by drug id',
-      usage: '{ "drug_id": "99402" }'
+      usage: '{ "drug_id": "99402" }',
+      response: '{ "score": 0.9, "drug_id": "99402" }'
     },
     {
       description: 'Get drug_score by drug id and adverse event id',
-      usage: '{ "drug_id": "99402", "adverse_event_id": "10001551" }'
+      usage: '{ "drug_id": "99402", "adverse_event_id": "10001551" }',
+      response: '{ "score": 0.9, "drug_id": "99402", "adverse_event_id": "10001551" }'
     },
     {
       description: 'Get target/class score by target id and action id',
-      usage: '{ "target_id": "158", "action_id": "15" }'
+      usage: '{ "target_id": "158", "action_id": "15" }',
+      response: '{ "score": 0.9, "target_id": "158", "action_id": "15" }'
     },
     {
       description: 'Get target/class score by target id, action id, and adverse event id',
-      usage: '{ "target_id": "158", "action_id": "15", "adverse_event_id": "10001551" }'
+      usage: '{ "target_id": "158", "action_id": "15", "adverse_event_id": "10001551" }',
+      response: '{ "score": 0.9, "target_id": "158", "action_id": "15", "adverse_event_id": "10001551" }'
     }
   ]
 };
@@ -358,10 +459,37 @@ const SEARCH_ADVERSE_EVENTS_TOOL = {
     },
     required: ['adverse_event']
   },
+  responseSchema: {
+    type: 'object',
+    properties: {
+      adverse_events: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            adverse_event_id: { type: 'string' },
+            adverse_event: { type: 'string' },
+            ref_source_type: { type: 'string' },
+            alert_type: { type: 'string' },
+            alert_phase: { type: 'string' },
+            alert_level_evidence: { type: 'string' },
+            alert_severity: { type: 'string' },
+            alert_causality: { type: 'string' },
+            alert_species: { type: 'string' },
+            alert_date_from: { type: 'string' },
+            alert_date_to: { type: 'string' }
+          },
+          required: ['adverse_event_id', 'adverse_event']
+        }
+      }
+    },
+    required: ['adverse_events']
+  },
   examples: [
     {
       description: 'Search adverse events by name',
-      usage: '{ "adverse_event": "Anaemia" }'
+      usage: '{ "adverse_event": "Anaemia" }',
+      response: '{ "adverse_events": [ { "adverse_event_id": "10001551", "adverse_event": "Anaemia", "ref_source_type": "clinical", "alert_type": "serious", "alert_phase": "postmarketing", "alert_level_evidence": "A", "alert_severity": "severe", "alert_causality": "unknown", "alert_species": "human", "alert_date_from": "2020-01-01", "alert_date_to": "2020-12-31" } ] }'
     }
   ]
 };
@@ -381,14 +509,42 @@ const GET_ADVERSE_EVENTS_TOOL = {
       { required: ['target_id'] }
     ]
   },
+  responseSchema: {
+    type: 'object',
+    properties: {
+      adverse_events: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            adverse_event_id: { type: 'string' },
+            adverse_event: { type: 'string' },
+            ref_source_type: { type: 'string' },
+            alert_type: { type: 'string' },
+            alert_phase: { type: 'string' },
+            alert_level_evidence: { type: 'string' },
+            alert_severity: { type: 'string' },
+            alert_causality: { type: 'string' },
+            alert_species: { type: 'string' },
+            alert_date_from: { type: 'string' },
+            alert_date_to: { type: 'string' }
+          },
+          required: ['adverse_event_id', 'adverse_event']
+        }
+      }
+    },
+    required: ['adverse_events']
+  },
   examples: [
     {
       description: 'Get adverse events by drug id',
-      usage: '{ "drug_id": "12345" }'
+      usage: '{ "drug_id": "12345" }',
+      response: '{ "adverse_events": [ { "adverse_event_id": "12345", "adverse_event": "Anaemia", "ref_source_type": "clinical", "alert_type": "serious", "alert_phase": "postmarketing", "alert_level_evidence": "A", "alert_severity": "severe", "alert_causality": "unknown", "alert_species": "human", "alert_date_from": "2020-01-01", "alert_date_to": "2020-12-31" } ] }'
     },
     {
       description: 'Get adverse events by target id',
-      usage: '{ "target_id": "67890" }'
+      usage: '{ "target_id": "67890" }',
+      response: '{ "adverse_events": [ { "adverse_event_id": "67890", "adverse_event": "Anaemia", "ref_source_type": "clinical", "alert_type": "serious", "alert_phase": "postmarketing", "alert_level_evidence": "A", "alert_severity": "severe", "alert_causality": "unknown", "alert_species": "human", "alert_date_from": "2020-01-01", "alert_date_to": "2020-12-31" } ] }'
     }
   ]
 };
@@ -415,14 +571,35 @@ const GET_DRUG_TOOL = {
     },
     required: ['drug_id', 'page']
   },
+  responseSchema: {
+    type: 'object',
+    properties: {
+      drug: {
+        type: 'object',
+        properties: {
+          drug_id: { type: 'string' },
+          drug_main_name: { type: 'string' },
+          drug_other_names: { type: 'array', items: { type: 'string' } },
+          drug_phase: { type: 'string' },
+          drug_molecule_type: { type: 'string' },
+          drug_modalities: { type: 'array', items: { type: 'string' } },
+          chembl_id: { type: 'string' }
+        },
+        required: ['drug_id', 'drug_main_name']
+      }
+    },
+    required: ['drug']
+  },
   examples: [
     {
       description: 'Get drug masterview for a drug',
-      usage: '{ "drug_id": "11204", "page": 1 }'
+      usage: '{ "drug_id": "11204", "page": 1 }',
+      response: '{ "drug": { "drug_id": "11204", "drug_main_name": "semaglutide" } }'
     },
     {
       description: 'Get drug masterview for a drug with filters',
-      usage: '{ "drug_id": "11204", "page": 2, "alert_type": "serious" }'
+      usage: '{ "drug_id": "11204", "page": 2, "alert_type": "serious" }',
+      response: '{ "drug": { "drug_id": "11204", "drug_main_name": "semaglutide", "alert_type": "serious" } }'
     }
   ]
 };
@@ -438,10 +615,38 @@ const SEARCH_TARGETS_TOOL = {
     },
     required: ['target']
   },
+  responseSchema: {
+    type: 'object',
+    properties: {
+      targets: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            target_id: { type: 'string' },
+            target: { type: 'string' },
+            ref_source_type: { type: 'string' },
+            alert_type: { type: 'string' },
+            alert_phase: { type: 'string' },
+            alert_level_evidence: { type: 'string' },
+            alert_onoff_target: { type: 'string' },
+            alert_severity: { type: 'string' },
+            alert_causality: { type: 'string' },
+            alert_species: { type: 'string' },
+            alert_date_from: { type: 'string' },
+            alert_date_to: { type: 'string' }
+          },
+          required: ['target_id', 'target']
+        }
+      }
+    },
+    required: ['targets']
+  },
   examples: [
     {
       description: 'Search for targets by name',
-      usage: '{ "target": "ALK" }'
+      usage: '{ "target": "ALK" }',
+      response: '{ "targets": [ { "target_id": "158", "target": "ALK", "ref_source_type": "clinical", "alert_type": "serious", "alert_phase": "postmarketing", "alert_level_evidence": "A", "alert_onoff_target": "on", "alert_severity": "severe", "alert_causality": "unknown", "alert_species": "human", "alert_date_from": "2020-01-01", "alert_date_to": "2020-12-31" } ] }'
     }
   ]
 };
@@ -470,14 +675,40 @@ const GET_TARGET_TOOL = {
     },
     required: ['target_id', 'action_id', 'page']
   },
+  responseSchema: {
+    type: 'object',
+    properties: {
+      target: {
+        type: 'object',
+        properties: {
+          target_id: { type: 'string' },
+          target: { type: 'string' },
+          ref_source_type: { type: 'string' },
+          alert_type: { type: 'string' },
+          alert_phase: { type: 'string' },
+          alert_level_evidence: { type: 'string' },
+          alert_onoff_target: { type: 'string' },
+          alert_severity: { type: 'string' },
+          alert_causality: { type: 'string' },
+          alert_species: { type: 'string' },
+          alert_date_from: { type: 'string' },
+          alert_date_to: { type: 'string' }
+        },
+        required: ['target_id', 'target']
+      }
+    },
+    required: ['target']
+  },
   examples: [
     {
       description: 'Get target masterview',
-      usage: '{ "target_id": "158", "action_id": "15", "page": 1 }'
+      usage: '{ "target_id": "158", "action_id": "15", "page": 1 }',
+      response: '{ "target": { "target_id": "158", "target": "ALK", "ref_source_type": "clinical", "alert_type": "serious", "alert_phase": "postmarketing", "alert_level_evidence": "A", "alert_onoff_target": "on", "alert_severity": "severe", "alert_causality": "unknown", "alert_species": "human", "alert_date_from": "2020-01-01", "alert_date_to": "2020-12-31" } }'
     },
     {
       description: 'Get target masterview with filters',
-      usage: '{ "target_id": "158", "action_id": "15", "page": 2, "alert_type": "serious" }'
+      usage: '{ "target_id": "158", "action_id": "15", "page": 2, "alert_type": "serious" }',
+      response: '{ "target": { "target_id": "158", "target": "ALK", "ref_source_type": "clinical", "alert_type": "serious", "alert_phase": "postmarketing", "alert_level_evidence": "A", "alert_onoff_target": "on", "alert_severity": "severe", "alert_causality": "unknown", "alert_species": "human", "alert_date_from": "2020-01-01", "alert_date_to": "2020-12-31" } }'
     }
   ]
 };
@@ -498,18 +729,48 @@ const GET_TARGETS_TOOL = {
       { required: ['adverse_event_id'] }
     ]
   },
+  responseSchema: {
+    type: 'object',
+    properties: {
+      targets: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            target_id: { type: 'string' },
+            target: { type: 'string' },
+            ref_source_type: { type: 'string' },
+            alert_type: { type: 'string' },
+            alert_phase: { type: 'string' },
+            alert_level_evidence: { type: 'string' },
+            alert_onoff_target: { type: 'string' },
+            alert_severity: { type: 'string' },
+            alert_causality: { type: 'string' },
+            alert_species: { type: 'string' },
+            alert_date_from: { type: 'string' },
+            alert_date_to: { type: 'string' }
+          },
+          required: ['target_id', 'target']
+        }
+      }
+    },
+    required: ['targets']
+  },
   examples: [
     {
       description: 'Get primary targets for a drug',
-      usage: '{ "drug_id": "11204", "type": "primary" }'
+      usage: '{ "drug_id": "11204", "type": "primary" }',
+      response: '{ "targets": [ { "target_id": "11204", "target": "semaglutide", "ref_source_type": "clinical", "alert_type": "serious", "alert_phase": "postmarketing", "alert_level_evidence": "A", "alert_onoff_target": "on", "alert_severity": "severe", "alert_causality": "unknown", "alert_species": "human", "alert_date_from": "2020-01-01", "alert_date_to": "2020-12-31" } ] }'
     },
     {
       description: 'Get secondary targets for a drug',
-      usage: '{ "drug_id": "11204", "type": "secondary" }'
+      usage: '{ "drug_id": "11204", "type": "secondary" }',
+      response: '{ "targets": [ { "target_id": "11204", "target": "semaglutide", "ref_source_type": "clinical", "alert_type": "serious", "alert_phase": "postmarketing", "alert_level_evidence": "A", "alert_onoff_target": "on", "alert_severity": "severe", "alert_causality": "unknown", "alert_species": "human", "alert_date_from": "2020-01-01", "alert_date_to": "2020-12-31" } ] }'
     },
     {
       description: 'Get targets by adverse event id',
-      usage: '{ "adverse_event_id": "10001551" }'
+      usage: '{ "adverse_event_id": "10001551" }',
+      response: '{ "targets": [ { "target_id": "158", "target": "ALK", "ref_source_type": "clinical", "alert_type": "serious", "alert_phase": "postmarketing", "alert_level_evidence": "A", "alert_onoff_target": "on", "alert_severity": "severe", "alert_causality": "unknown", "alert_species": "human", "alert_date_from": "2020-01-01", "alert_date_to": "2020-12-31" } ] }'
     }
   ]
 };
@@ -988,6 +1249,12 @@ async function getTargets(args: { drug_id?: string, type?: 'primary' | 'secondar
   }
 }
 
+// Unified error response helper
+function sendError(res: http.ServerResponse, message: string, code: number = 400) {
+  res.writeHead(code, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ error: message, code }));
+}
+
 /**
  * Main server initialization and setup function
  * Supports both HTTP and MCP server modes with configurable transport
@@ -997,6 +1264,96 @@ async function getTargets(args: { drug_id?: string, type?: 'primary' | 'secondar
 async function runServer() {
   if (USE_HTTP) {
     const server = http.createServer(async (req, res) => {
+      const method = req.method || '';
+      const url = req.url || '';
+
+      // Health check endpoint
+      if (method === 'GET' && url === '/health') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ status: 'ok' }));
+        return;
+      }
+
+      // List tools endpoint
+      if (method === 'POST' && url === '/list_tools') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          tools: [
+            {
+              endpoint: '/search_drugs',
+              description: SEARCH_DRUGS_TOOL.description,
+              inputSchema: SEARCH_DRUGS_TOOL.inputSchema,
+              responseSchema: SEARCH_DRUGS_TOOL.responseSchema,
+              examples: SEARCH_DRUGS_TOOL.examples
+            },
+            {
+              endpoint: '/get_drugs',
+              description: GET_DRUGS_TOOL.description,
+              inputSchema: GET_DRUGS_TOOL.inputSchema,
+              responseSchema: GET_DRUGS_TOOL.responseSchema,
+              examples: GET_DRUGS_TOOL.examples
+            },
+            {
+              endpoint: '/get_alerts',
+              description: GET_ALERTS_TOOL.description,
+              inputSchema: GET_ALERTS_TOOL.inputSchema,
+              responseSchema: GET_ALERTS_TOOL.responseSchema,
+              examples: GET_ALERTS_TOOL.examples
+            },
+            {
+              endpoint: '/get_score',
+              description: GET_SCORE_TOOL.description,
+              inputSchema: GET_SCORE_TOOL.inputSchema,
+              responseSchema: GET_SCORE_TOOL.responseSchema,
+              examples: GET_SCORE_TOOL.examples
+            },
+            {
+              endpoint: '/get_drug',
+              description: GET_DRUG_TOOL.description,
+              inputSchema: GET_DRUG_TOOL.inputSchema,
+              responseSchema: GET_DRUG_TOOL.responseSchema,
+              examples: GET_DRUG_TOOL.examples
+            },
+            {
+              endpoint: '/search_adverse_events',
+              description: SEARCH_ADVERSE_EVENTS_TOOL.description,
+              inputSchema: SEARCH_ADVERSE_EVENTS_TOOL.inputSchema,
+              responseSchema: SEARCH_ADVERSE_EVENTS_TOOL.responseSchema,
+              examples: SEARCH_ADVERSE_EVENTS_TOOL.examples
+            },
+            {
+              endpoint: '/get_adverse_events',
+              description: GET_ADVERSE_EVENTS_TOOL.description,
+              inputSchema: GET_ADVERSE_EVENTS_TOOL.inputSchema,
+              responseSchema: GET_ADVERSE_EVENTS_TOOL.responseSchema,
+              examples: GET_ADVERSE_EVENTS_TOOL.examples
+            },
+            {
+              endpoint: '/search_targets',
+              description: SEARCH_TARGETS_TOOL.description,
+              inputSchema: SEARCH_TARGETS_TOOL.inputSchema,
+              responseSchema: SEARCH_TARGETS_TOOL.responseSchema,
+              examples: SEARCH_TARGETS_TOOL.examples
+            },
+            {
+              endpoint: '/get_target',
+              description: GET_TARGET_TOOL.description,
+              inputSchema: GET_TARGET_TOOL.inputSchema,
+              responseSchema: GET_TARGET_TOOL.responseSchema,
+              examples: GET_TARGET_TOOL.examples
+            },
+            {
+              endpoint: '/get_targets',
+              description: GET_TARGETS_TOOL.description,
+              inputSchema: GET_TARGETS_TOOL.inputSchema,
+              responseSchema: GET_TARGETS_TOOL.responseSchema,
+              examples: GET_TARGETS_TOOL.examples
+            }
+          ]
+        }));
+        return;
+      }
+
       // Helper to parse JSON body
       const parseBody = (req: http.IncomingMessage) => new Promise<any>((resolve, reject) => {
         let body = '';
@@ -1007,11 +1364,12 @@ async function runServer() {
       });
 
       // Routing for all tools
-      if (req.method === 'POST') {
-        const url = req.url || '';
+      if (method === 'POST') {
+        let data: any;
+        let result: any;
         try {
-          let data: any = await parseBody(req);
-          let result: any;
+          data = await parseBody(req);
+          let url = req.url || '';
           if (url === '/search_drugs') {
             result = await searchDrugsByName(data);
           } else if (url === '/get_drugs') {
@@ -1033,19 +1391,16 @@ async function runServer() {
           } else if (url === '/get_targets') {
             result = await getTargets(data);
           } else {
-            res.writeHead(404, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Not found' }));
+            sendError(res, 'Not found', 404);
             return;
           }
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify(result));
         } catch (err) {
-          res.writeHead(500, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: err instanceof Error ? err.message : String(err) }));
+          sendError(res, err instanceof Error ? err.message : String(err));
         }
       } else {
-        res.writeHead(404, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Not found' }));
+        sendError(res, 'Not found', 404);
       }
     });
     server.listen(PORT, () => {

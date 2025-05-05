@@ -27,6 +27,40 @@ npx offx-mcp-server
 USE_HTTP=true PORT=3000 npx offx-mcp-server
 ```
 
+## Features
+- Direct access to OFFX (Target Safety) drug and safety database
+- Search by drug, adverse event, target, action, or name
+- Retrieve alerts and scores for drugs
+- Structured JSON responses
+- Pagination support for large result sets
+
+## Supported Formats
+
+The following types are OFFX-API compatible:
+
+| Field   | Format      | Comments                       |
+|---------|-------------|--------------------------------|
+| dates   | yyyy-mm-dd  | Specification ISO 8601         |
+| strings | String      | No quotes needed in JSON       |
+| numbers | Integer     | Only accepts integers          |
+
+## Optional Filter Parameters
+
+The following filters are OFFX-API compatible. For fields that accept multiple values, use comma-separated numbers (e.g., `adverse_event_id=10000059,10000081`).
+
+| Field                | Format                  | Allowed Values/Comments                                                                                       |
+|----------------------|-------------------------|--------------------------------------------------------------------------------------------------------------|
+| Adverse Event        | Comma separated number  | Example: `adverse_event_id=10000059,10000081,10001761`                                                      |
+| Alert Type           | Comma separated number  | 1 - Class Alert, 2 - Drug Alert                                                                             |
+| Alert Phase          | Comma separated number  | 1 - Clinical/Postmarketing, 2 - Preclinical, 3 - Clinical, 4 - Postmarketing, 5 - Target Discovery, 6 - Phase I, 7 - Phase II, 8 - Phase III, 9 - Phase IV, 10 - Phase I/II, 11 - Phase II/III, 12 - Phase III/IV |
+| Reference source type| Comma separated number  | 9 - Congress, 10 - Website Reference, 11 - Company Communication, 27 - Health Organization, 24 - Database, 22 - DailyMed, 23 - Regulatory Agency Briefing, 25 - Patent, 12 - Medical Society Communication, 13 - Research Institution Communication, 14 - Regulatory Agency Communication, 15 - Regulatory Agency Guideline, 16 - Patient Advocacy Group communication, 17 - Other, 18 - Book, 19 - Journal, 20 - Congress Alert, 21 - Congress & Conferences, 26 - Clinical Trial Registry |
+| Level of evidence    | Comma separated number  | 1 - Confirmed/Reported, 2 - Suspected, 3 - Refuted/Not Associated                                           |
+| On/Off Target        | Comma separated number  | 1 - On-Target, 2 - Off-Target, 3 - Not Specified                                                            |
+| Alert Severity       | String                  | yes, no                                                                                                     |
+| Ordering             | String                  | order_by_date=desc/asc, order_by_adv=desc/asc                                                               |
+
+Refer to these tables when using filter parameters in the endpoints below.
+
 ## Tools
 
 1. `search_drugs`
@@ -105,69 +139,20 @@ USE_HTTP=true PORT=3000 npx offx-mcp-server
      - `{ "target_id": "158", "action_id": "15", "page": 2, "alert_type": "serious" }`
 
 10. `get_targets`
-   - Get primary or secondary targets for a drug by `drug_id`, or targets by `adverse_event_id`
-   - Input: `{ drug_id?: string, type?: 'primary' | 'secondary', adverse_event_id?: string }`
-   - Requirements:
-     - You must provide **exactly one** of: `drug_id` or `adverse_event_id` (not both, not neither)
-     - If `drug_id` is provided and `type` is not specified, it defaults to `'primary'`
-   - Returns:
-     - `{ primary_targets: [...] }` or `{ secondary_targets: [...] }` (for drug search)
-     - `{ targets: [...] }` (for adverse event search)
-   - Examples:
-     - `{ "drug_id": "11204" }` (returns primary targets)
-     - `{ "drug_id": "11204", "type": "secondary" }`
-     - `{ "adverse_event_id": "10001551" }`
+    - Get primary or secondary targets for a drug by `drug_id`, or targets by `adverse_event_id`
+    - Input: `{ drug_id?: string, type?: 'primary' | 'secondary', adverse_event_id?: string }`
+    - Requirements:
+      - You must provide **exactly one** of: `drug_id` or `adverse_event_id` (not both, not neither)
+      - If `drug_id` is provided and `type` is not specified, it defaults to `'primary'`
+    - Returns:
+      - `{ primary_targets: [...] }` or `{ secondary_targets: [...] }` (for drug search)
+      - `{ targets: [...] }` (for adverse event search)
+    - Examples:
+      - `{ "drug_id": "11204" }` (returns primary targets)
+      - `{ "drug_id": "11204", "type": "secondary" }`
+      - `{ "adverse_event_id": "10001551" }`
 
-## Features
-
-- Direct access to OFFX (Target Safety) drug and safety database
-- Search by drug, adverse event, target, action, or name
-- Retrieve alerts and scores for drugs
-- Structured JSON responses
-- Pagination support for large result sets
-
-## OFF-X Drug Score
-
-The **OFF-X Drug Score** is a rule-based algorithm that summarizes the strength of evidence for a drug–adverse event association, based on all available safety alerts in OFF-X.
-
-- **What it measures:** Strength and quality of evidence for a drug–adverse event association, considering all available alerts (regulatory, clinical, literature, etc.).
-- **Key parameters:**
-  - Number and type of alerts
-  - Source and study type
-  - Association reference and causality
-  - Development phase
-- **Qualitative labels:** Very High, High, Medium, Low, Not Associated, Class Evidence Only, Combination Evidence Only
-- **Important notes:**
-  - Does **not** imply causality, prevalence, or severity.
-  - Lack of a score may reflect lack of published evidence, not lack of association.
-
-## OFF-X Target/Class Score
-
-The **OFF-X Target/Class Score** estimates the strength of evidence for an association between a class of drugs (sharing the same target action) and an adverse event, using all available class and drug-level alerts in OFF-X.
-
-- **What it measures:** Evidence that an adverse event could be a class effect for drugs sharing a mechanism (target action).
-- **Main use cases:**
-  - Identifying emerging class liabilities
-  - Comparing safety profiles for different targets
-  - Deconvoluting toxicity mechanisms
-  - Target safety assessment and off-target panel building
-- **Key parameters:**
-  - Number and type of class alerts
-  - Source, study type, association reference, causality, development phase
-  - Evidence from OFF-X Drug Scores of class members
-  - % of drugs in the class associated with the adverse event
-- **Qualitative labels:**
-  - Very High: Strong evidence from both class alerts and drug scores
-  - High: Strong evidence from either class alerts or drug scores
-  - Medium: Growing evidence
-  - Low/Very Low: Preliminary or scarce evidence
-  - Not Associated: Evidence refutes the association
-- **Important notes:**
-  - Does **not** imply causality, prevalence, or severity.
-  - Lack of a score may reflect lack of published evidence, not lack of association.
-  - Score may be affected by data availability and coverage in OFF-X.
-
-For more details, see the official OFF-X documentation or contact Clarivate.
+> **Note:** See the Supported Formats and Optional Filter Parameters sections above for allowed values and formats for filter fields such as `adverse_event_id`, `alert_type`, `alert_phase`, `ref_source_type`, `alert_level_evidence`, `alert_onoff_target`, `alert_severity`, and ordering fields.
 
 ## HTTP API Endpoints
 
@@ -269,3 +254,24 @@ vim .env  # or use your preferred editor
 # Start the server
 npm run start
 ```
+
+## Docker
+
+```bash
+docker build -t offx-mcp-server .
+docker run -i --env-file .env offx-mcp-server
+```
+
+## License
+
+This MCP server is licensed under the MIT License.
+
+## Disclaimer
+
+OFF-X™ is a commercial product and trademark of Clarivate Analytics. This MCP server requires valid OFF-X API credentials to function. To obtain credentials and learn more about OFF-X, please visit Clarivate's OFF-X page.
+
+This project is not affiliated with, endorsed by, or sponsored by Clarivate Analytics. All product names, logos, and brands are property of their respective owners.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
