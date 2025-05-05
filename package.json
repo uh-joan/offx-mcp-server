@@ -1,31 +1,34 @@
 {
-  "name": "@uh-joan/cortellis-mcp-server",
-  "version": "0.1.0-beta.0",
-  "description": "MCP server for Cortellis drug database search and ontology exploration",
+  "name": "offx-mcp-server",
+  "version": "0.1.0",
+  "description": "OFF-X (Target Safety) MCP server for drug safety, adverse event, and target risk analytics.",
   "license": "MIT",
   "type": "module",
   "author": "Joan Saez-Pons (https://github.com/uh-joan)",
   "repository": {
     "type": "git",
-    "url": "https://github.com/uh-joan/cortellis-mcp-server.git"
+    "url": "https://github.com/uh-joan/offx-mcp-server.git"
   },
   "bugs": {
-    "url": "https://github.com/uh-joan/cortellis-mcp-server/issues"
+    "url": "https://github.com/uh-joan/offx-mcp-server/issues"
   },
-  "homepage": "https://github.com/uh-joan/cortellis-mcp-server#readme",
+  "homepage": "https://github.com/uh-joan/offx-mcp-server#readme",
   "keywords": [
+    "offx",
+    "target-safety",
+    "drug-safety",
+    "adverse-events",
+    "pharmacovigilance",
     "mcp",
-    "cortellis",
-    "drug-database",
-    "pharmaceutical",
     "api",
-    "server"
+    "server",
+    "risk-analytics"
   ],
   "publishConfig": {
     "access": "public"
   },
   "bin": {
-    "cortellis-mcp-server": "./dist/index.js"
+    "offx-mcp-server": "./dist/index.js"
   },
   "files": [
     "dist",
