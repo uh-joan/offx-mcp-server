@@ -171,13 +171,49 @@ For more details, see the official OFF-X documentation or contact Clarivate.
 
 ## HTTP API Endpoints
 
-When running in HTTP mode (USE_HTTP=true), the following REST endpoint is available:
+When running in HTTP mode (`USE_HTTP=true`), the following REST endpoints are available. All endpoints accept a POST request with a JSON body as described below:
 
 1. `POST /search_drugs`
-   - Search for adverse events for a drug by drug_id
-   - Body: JSON object with `{ drug_id: string }`
+   - Search drugs by name
+   - Body: `{ "drug": "semaglutide" }`
 
-> **Note:** Other endpoints are not yet implemented for HTTP mode. Use MCP mode for full tool support.
+2. `POST /get_drugs`
+   - Get drugs by both `target_id` and `action_id` (together), or by `adverse_event_id`
+   - Body: `{ "target_id": "165", "action_id": "4" }` or `{ "adverse_event_id": "10001551" }`
+
+3. `POST /get_alerts`
+   - Get alerts for a drug (by `drug_id`) or a target (by `target_id`, with optional `action_id`)
+   - Body: `{ "drug_id": "140448", "page": 1 }` or `{ "target_id": "165", "action_id": "4", "page": 1 }`
+
+4. `POST /get_score`
+   - Get drug score by `drug_id` (optionally with `adverse_event_id`), or target/class score by `target_id` and `action_id`
+   - Body: `{ "drug_id": "140448" }` or `{ "target_id": "165", "action_id": "4" }`
+
+5. `POST /get_drug`
+   - Get drug masterview by `drug_id` (with optional filters)
+   - Body: `{ "drug_id": "140448", "page": 1 }`
+
+6. `POST /search_adverse_events`
+   - Search adverse events by name (min 3 chars)
+   - Body: `{ "adverse_event": "Anaemia" }`
+
+7. `POST /get_adverse_events`
+   - Get adverse events by `drug_id` or `target_id` (provide exactly one)
+   - Body: `{ "drug_id": "140448" }` or `{ "target_id": "165" }`
+
+8. `POST /search_targets`
+   - Search targets by target name
+   - Body: `{ "target": "GLP-1 receptor" }`
+
+9. `POST /get_target`
+   - Get target masterview by `target_id` and `action_id` (both required; with optional filters)
+   - Body: `{ "target_id": "165", "action_id": "4", "page": 1 }`
+
+10. `POST /get_targets`
+    - Get primary or secondary targets for a drug by `drug_id`, or targets by `adverse_event_id`
+    - Body: `{ "drug_id": "140448" }` (returns primary targets), `{ "drug_id": "140448", "type": "secondary" }`, or `{ "adverse_event_id": "10001551" }`
+
+> **Note:** All endpoints return structured JSON responses. See the tool documentation above for detailed input requirements and response formats.
 
 ## Setup
 
