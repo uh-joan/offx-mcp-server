@@ -90,7 +90,7 @@ Refer to these tables when using filter parameters in the endpoints below.
    - Examples:
      - `{ "drug_id": "11204", "page": 1 }`
      - `{ "target_id": "158", "page": 1 }`
-     - `{ "target_id": "158", "action_id": "15", "page": 2, "alert_type": "serious" }`
+     - `{ "target_id": "158", "action_id": "15", "page": 2, "alert_type": "2" }`
 
 4. `get_score`
    - Get drug score by `drug_id` (and optionally `adverse_event_id`), **or** get target/class score by `target_id` and `action_id` (and optionally `adverse_event_id`)
@@ -102,14 +102,14 @@ Refer to these tables when using filter parameters in the endpoints below.
      - `{ "drug_id": "99402" }`
      - `{ "drug_id": "99402", "adverse_event_id": "10001551" }`
      - `{ "target_id": "158", "action_id": "15" }`
-     - `{ "target_id": "158", "action_id": "15", "adverse_event_id": "10001551" }`
+     - `{ "target_id": "158", "action_id": "15", "page": 2, "alert_type": "2" }`
 
 5. `get_drug`
    - Get drug masterview by drug id (with optional filters)
    - Input: `{ drug_id: string, page: number, adverse_event_id?: string, ref_source_type?: string, alert_type?: string, alert_phase?: string, alert_level_evidence?: string, alert_severity?: string, alert_causality?: string, alert_species?: string, alert_date_from?: string, alert_date_to?: string }`
    - Examples:
      - `{ "drug_id": "11204", "page": 1 }`
-     - `{ "drug_id": "11204", "page": 2, "alert_type": "serious" }`
+     - `{ "drug_id": "11204", "page": 2, "alert_type": "2" }`
 
 6. `search_adverse_events`
    - Search adverse events by name (min 3 chars)
@@ -136,7 +136,7 @@ Refer to these tables when using filter parameters in the endpoints below.
      - `page` is optional and defaults to 1 if not specified
    - Examples:
      - `{ "target_id": "158", "action_id": "15" }`
-     - `{ "target_id": "158", "action_id": "15", "page": 2, "alert_type": "serious" }`
+     - `{ "target_id": "158", "action_id": "15", "page": 2, "alert_type": "2" }`
 
 10. `get_targets`
     - Get primary or secondary targets for a drug by `drug_id`, or targets by `adverse_event_id`
@@ -275,3 +275,12 @@ This project is not affiliated with, endorsed by, or sponsored by Clarivate Anal
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+
+> **Note:** For `alert_type`, use only numeric codes as a string:
+>
+> | Code | Alert Type   |
+> |------|--------------|
+> | 1    | Class Alert  |
+> | 2    | Drug Alert   |
+>
+> You can specify more than one, e.g. `"alert_type": "1,2"`.

@@ -253,8 +253,8 @@ const SEARCH_DRUGS_TOOL = {
       }
     },
     required: ['drugs']
-  },
-  examples: [
+        },
+        examples: [
     {
       description: 'Search for drugs by name',
       usage: '{ "drug": "everolimus" }',
@@ -329,7 +329,7 @@ const GET_ALERTS_TOOL = {
       page: { type: 'number', description: 'Page number (required)' },
       adverse_event_id: { type: 'string', description: 'Adverse Event ID (optional)' },
       ref_source_type: { type: 'string', description: 'Reference source type (optional)' },
-      alert_type: { type: 'string', description: 'Alert Type (optional)' },
+      alert_type: { type: 'string', description: 'Alert Type (optional): "1" = Class Alert, "2" = Drug Alert, "1,2" = both', enum: ['1', '2', '1,2'], examples: ['1', '2', '1,2'] },
       alert_phase: { type: 'string', description: 'Alert Phase (optional)' },
       alert_level_evidence: { type: 'string', description: 'Level of evidence (optional)' },
       alert_onoff_target: { type: 'string', description: 'On/Off target (optional, for target alerts)' },
@@ -381,17 +381,17 @@ const GET_ALERTS_TOOL = {
     {
       description: 'Get alerts for a drug',
       usage: '{ "drug_id": "11204", "page": 1 }',
-      response: '{ "alerts": [ { "drug_id": "11204", "target_id": "158", "action_id": "15", "adverse_event_id": "10001551", "ref_source_type": "clinical", "alert_type": "serious", "alert_phase": "postmarketing", "alert_level_evidence": "A", "alert_onoff_target": "on", "alert_severity": "severe", "alert_causality": "unknown", "alert_species": "human", "alert_date_from": "2020-01-01", "alert_date_to": "2020-12-31", "order_by_date": "2020-01-01", "order_by_adv": "2020-01-01" } ] }'
+      response: '{ "alerts": [ { "drug_id": "11204", "target_id": "158", "action_id": "15", "adverse_event_id": "10001551", "ref_source_type": "clinical", "alert_type": "2", "alert_phase": "postmarketing", "alert_level_evidence": "A", "alert_onoff_target": "on", "alert_severity": "severe", "alert_causality": "unknown", "alert_species": "human", "alert_date_from": "2020-01-01", "alert_date_to": "2020-12-31", "order_by_date": "2020-01-01", "order_by_adv": "2020-01-01" } ] }'
     },
     {
       description: 'Get alerts for a target',
       usage: '{ "target_id": "158", "page": 1 }',
-      response: '{ "alerts": [ { "drug_id": "11204", "target_id": "158", "action_id": "15", "adverse_event_id": "10001551", "ref_source_type": "clinical", "alert_type": "serious", "alert_phase": "postmarketing", "alert_level_evidence": "A", "alert_onoff_target": "on", "alert_severity": "severe", "alert_causality": "unknown", "alert_species": "human", "alert_date_from": "2020-01-01", "alert_date_to": "2020-12-31", "order_by_date": "2020-01-01", "order_by_adv": "2020-01-01" } ] }'
+      response: '{ "alerts": [ { "drug_id": "11204", "target_id": "158", "action_id": "15", "adverse_event_id": "10001551", "ref_source_type": "clinical", "alert_type": "2", "alert_phase": "postmarketing", "alert_level_evidence": "A", "alert_onoff_target": "on", "alert_severity": "severe", "alert_causality": "unknown", "alert_species": "human", "alert_date_from": "2020-01-01", "alert_date_to": "2020-12-31", "order_by_date": "2020-01-01", "order_by_adv": "2020-01-01" } ] }'
     },
     {
       description: 'Get alerts for a target with filters',
-      usage: '{ "target_id": "158", "page": 2, "alert_type": "serious" }',
-      response: '{ "alerts": [ { "drug_id": "11204", "target_id": "158", "action_id": "15", "adverse_event_id": "10001551", "ref_source_type": "clinical", "alert_type": "serious", "alert_phase": "postmarketing", "alert_level_evidence": "A", "alert_onoff_target": "on", "alert_severity": "severe", "alert_causality": "unknown", "alert_species": "human", "alert_date_from": "2020-01-01", "alert_date_to": "2020-12-31", "order_by_date": "2020-01-01", "order_by_adv": "2020-01-01" } ] }'
+      usage: '{ "target_id": "158", "page": 2, "alert_type": "2" }',
+      response: '{ "alerts": [ { "drug_id": "11204", "target_id": "158", "action_id": "15", "adverse_event_id": "10001551", "ref_source_type": "clinical", "alert_type": "2", "alert_phase": "postmarketing", "alert_level_evidence": "A", "alert_onoff_target": "on", "alert_severity": "severe", "alert_causality": "unknown", "alert_species": "human", "alert_date_from": "2020-01-01", "alert_date_to": "2020-12-31", "order_by_date": "2020-01-01", "order_by_adv": "2020-01-01" } ] }'
     }
   ]
 };
@@ -560,7 +560,7 @@ const GET_DRUG_TOOL = {
       page: { type: 'number', description: 'Page number (required)' },
       adverse_event_id: { type: 'string', description: 'Adverse Event ID (optional)' },
       ref_source_type: { type: 'string', description: 'Reference source type (optional)' },
-      alert_type: { type: 'string', description: 'Alert Type (optional)' },
+      alert_type: { type: 'string', description: 'Alert Type (optional): "1" = Class Alert, "2" = Drug Alert, "1,2" = both', enum: ['1', '2', '1,2'], examples: ['1', '2', '1,2'] },
       alert_phase: { type: 'string', description: 'Alert Phase (optional)' },
       alert_level_evidence: { type: 'string', description: 'Level of evidence (optional)' },
       alert_severity: { type: 'string', description: 'Alert Severity (optional)' },
@@ -598,8 +598,8 @@ const GET_DRUG_TOOL = {
     },
     {
       description: 'Get drug masterview for a drug with filters',
-      usage: '{ "drug_id": "11204", "page": 2, "alert_type": "serious" }',
-      response: '{ "drug": { "drug_id": "11204", "drug_main_name": "semaglutide", "alert_type": "serious" } }'
+      usage: '{ "drug_id": "11204", "page": 2, "alert_type": "2" }',
+      response: '{ "drug": { "drug_id": "11204", "drug_main_name": "semaglutide", "alert_type": "2" } }'
     }
   ]
 };
@@ -663,7 +663,7 @@ const GET_TARGET_TOOL = {
       page: { type: 'number', description: 'Page number (required)' },
       adverse_event_id: { type: 'string', description: 'Adverse Event ID (optional)' },
       ref_source_type: { type: 'string', description: 'Reference source type (optional)' },
-      alert_type: { type: 'string', description: 'Alert Type (optional)' },
+      alert_type: { type: 'string', description: 'Alert Type (optional): "1" = Class Alert, "2" = Drug Alert, "1,2" = both', enum: ['1', '2', '1,2'], examples: ['1', '2', '1,2'] },
       alert_phase: { type: 'string', description: 'Alert Phase (optional)' },
       alert_level_evidence: { type: 'string', description: 'Level of evidence (optional)' },
       alert_onoff_target: { type: 'string', description: 'On/Off target (optional)' },
@@ -707,8 +707,8 @@ const GET_TARGET_TOOL = {
     },
     {
       description: 'Get target masterview with filters',
-      usage: '{ "target_id": "158", "action_id": "15", "page": 2, "alert_type": "serious" }',
-      response: '{ "target": { "target_id": "158", "target": "ALK", "ref_source_type": "clinical", "alert_type": "serious", "alert_phase": "postmarketing", "alert_level_evidence": "A", "alert_onoff_target": "on", "alert_severity": "severe", "alert_causality": "unknown", "alert_species": "human", "alert_date_from": "2020-01-01", "alert_date_to": "2020-12-31" } }'
+      usage: '{ "target_id": "158", "action_id": "15", "page": 2, "alert_type": "2" }',
+      response: '{ "target": { "target_id": "158", "target": "ALK", "ref_source_type": "clinical", "alert_type": "2", "alert_phase": "postmarketing", "alert_level_evidence": "A", "alert_onoff_target": "on", "alert_severity": "severe", "alert_causality": "unknown", "alert_species": "human", "alert_date_from": "2020-01-01", "alert_date_to": "2020-12-31" } }'
     }
   ]
 };
@@ -831,17 +831,43 @@ async function getDrugs(args: { target_id?: string, action_id?: string, adverse_
   return await response.json();
 }
 
+function validateCommaSeparatedNumbers(param: any, fieldName: string) {
+  if (param === undefined || param === null || param === '') return;
+  if (typeof param === 'number') return;
+  if (typeof param === 'string') {
+    if (!/^\d+(,\d+)*$/.test(param)) {
+      throw new Error(`${fieldName} must be a number or a comma-separated list of numbers (e.g., 1,2,3)`);
+    }
+    return;
+  }
+  throw new Error(`${fieldName} must be a number or a comma-separated list of numbers (e.g., 1,2,3)`);
+}
+
+function validateStringEnum(param: any, fieldName: string, allowed: string[]) {
+  if (param === undefined || param === null || param === '') return;
+  if (typeof param !== 'string' || !allowed.includes(param)) {
+    throw new Error(`${fieldName} must be one of: ${allowed.join(', ')}`);
+  }
+}
+
+function validateNumber(param: any, fieldName: string) {
+  if (param === undefined || param === null) return;
+  if (typeof param !== 'number') {
+    throw new Error(`${fieldName} must be a number`);
+  }
+}
+
 async function getAlerts(params: {
-  drug_id?: string,
-  target_id?: string,
-  action_id?: string,
+  drug_id?: string | number,
+  target_id?: string | number,
+  action_id?: string | number,
   page?: number,
-  adverse_event_id?: string,
-  ref_source_type?: string,
-  alert_type?: string,
-  alert_phase?: string,
-  alert_level_evidence?: string,
-  alert_onoff_target?: string,
+  adverse_event_id?: string | number,
+  ref_source_type?: string | number,
+  alert_type?: string | number,
+  alert_phase?: string | number,
+  alert_level_evidence?: string | number,
+  alert_onoff_target?: string | number,
   alert_severity?: string,
   alert_causality?: string,
   alert_species?: string,
@@ -850,6 +876,27 @@ async function getAlerts(params: {
   order_by_date?: string,
   order_by_adv?: string
 }) {
+  // Validate numeric filter fields
+  validateCommaSeparatedNumbers(params.drug_id, 'drug_id');
+  validateCommaSeparatedNumbers(params.target_id, 'target_id');
+  validateCommaSeparatedNumbers(params.action_id, 'action_id');
+  validateNumber(params.page, 'page');
+  validateCommaSeparatedNumbers(params.adverse_event_id, 'adverse_event_id');
+  validateCommaSeparatedNumbers(params.ref_source_type, 'ref_source_type');
+  validateCommaSeparatedNumbers(params.alert_type, 'alert_type');
+  validateCommaSeparatedNumbers(params.alert_phase, 'alert_phase');
+  validateCommaSeparatedNumbers(params.alert_level_evidence, 'alert_level_evidence');
+  validateCommaSeparatedNumbers(params.alert_onoff_target, 'alert_onoff_target');
+  // Validate enums
+  if (params.alert_severity !== undefined) {
+    validateStringEnum(params.alert_severity, 'alert_severity', ['yes', 'no']);
+  }
+  if (params.order_by_date !== undefined) {
+    validateStringEnum(params.order_by_date, 'order_by_date', ['desc', 'asc']);
+  }
+  if (params.order_by_adv !== undefined) {
+    validateStringEnum(params.order_by_adv, 'order_by_adv', ['desc', 'asc']);
+  }
   const { drug_id, target_id, page } = params;
   const pageNum = page ?? 1;
   if ((drug_id && target_id) || (!drug_id && !target_id)) {
@@ -1030,19 +1077,29 @@ async function getScore(args: { drug_id?: string, adverse_event_id?: string, tar
 }
 
 async function getDrugMasterview(params: {
-  drug_id: string,
+  drug_id: string | number,
   page: number,
-  adverse_event_id?: string,
-  ref_source_type?: string,
-  alert_type?: string,
-  alert_phase?: string,
-  alert_level_evidence?: string,
+  adverse_event_id?: string | number,
+  ref_source_type?: string | number,
+  alert_type?: string | number,
+  alert_phase?: string | number,
+  alert_level_evidence?: string | number,
   alert_severity?: string,
   alert_causality?: string,
   alert_species?: string,
   alert_date_from?: string,
   alert_date_to?: string
 }) {
+  validateCommaSeparatedNumbers(params.drug_id, 'drug_id');
+  validateNumber(params.page, 'page');
+  validateCommaSeparatedNumbers(params.adverse_event_id, 'adverse_event_id');
+  validateCommaSeparatedNumbers(params.ref_source_type, 'ref_source_type');
+  validateCommaSeparatedNumbers(params.alert_type, 'alert_type');
+  validateCommaSeparatedNumbers(params.alert_phase, 'alert_phase');
+  validateCommaSeparatedNumbers(params.alert_level_evidence, 'alert_level_evidence');
+  if (params.alert_severity !== undefined) {
+    validateStringEnum(params.alert_severity, 'alert_severity', ['yes', 'no']);
+  }
   const { drug_id, page } = params;
   if (!drug_id) {
     throw new Error('drug_id is required');
@@ -1108,21 +1165,33 @@ async function searchTargets({ target }: { target: string }) {
 }
 
 async function getTargetMasterview(params: {
-  target_id: string,
-  action_id: string,
+  target_id: string | number,
+  action_id: string | number,
   page?: number,
-  adverse_event_id?: string,
-  ref_source_type?: string,
-  alert_type?: string,
-  alert_phase?: string,
-  alert_level_evidence?: string,
-  alert_onoff_target?: string,
+  adverse_event_id?: string | number,
+  ref_source_type?: string | number,
+  alert_type?: string | number,
+  alert_phase?: string | number,
+  alert_level_evidence?: string | number,
+  alert_onoff_target?: string | number,
   alert_severity?: string,
   alert_causality?: string,
   alert_species?: string,
   alert_date_from?: string,
   alert_date_to?: string
 }) {
+  validateCommaSeparatedNumbers(params.target_id, 'target_id');
+  validateCommaSeparatedNumbers(params.action_id, 'action_id');
+  validateNumber(params.page, 'page');
+  validateCommaSeparatedNumbers(params.adverse_event_id, 'adverse_event_id');
+  validateCommaSeparatedNumbers(params.ref_source_type, 'ref_source_type');
+  validateCommaSeparatedNumbers(params.alert_type, 'alert_type');
+  validateCommaSeparatedNumbers(params.alert_phase, 'alert_phase');
+  validateCommaSeparatedNumbers(params.alert_level_evidence, 'alert_level_evidence');
+  validateCommaSeparatedNumbers(params.alert_onoff_target, 'alert_onoff_target');
+  if (params.alert_severity !== undefined) {
+    validateStringEnum(params.alert_severity, 'alert_severity', ['yes', 'no']);
+  }
   const { target_id, action_id, page } = params;
   if (!target_id) {
     throw new Error('target_id is required');
@@ -1281,7 +1350,7 @@ async function runServer() {
           tools: [
             {
               endpoint: '/search_drugs',
-              description: SEARCH_DRUGS_TOOL.description,
+        description: SEARCH_DRUGS_TOOL.description,
               inputSchema: SEARCH_DRUGS_TOOL.inputSchema,
               responseSchema: SEARCH_DRUGS_TOOL.responseSchema,
               examples: SEARCH_DRUGS_TOOL.examples
@@ -1309,7 +1378,7 @@ async function runServer() {
             },
             {
               endpoint: '/get_drug',
-              description: GET_DRUG_TOOL.description,
+        description: GET_DRUG_TOOL.description,
               inputSchema: GET_DRUG_TOOL.inputSchema,
               responseSchema: GET_DRUG_TOOL.responseSchema,
               examples: GET_DRUG_TOOL.examples
@@ -1351,8 +1420,8 @@ async function runServer() {
             }
           ]
         }));
-        return;
-      }
+    return;
+  }
 
       // Helper to parse JSON body
       const parseBody = (req: http.IncomingMessage) => new Promise<any>((resolve, reject) => {
@@ -1369,7 +1438,7 @@ async function runServer() {
         let result: any;
         try {
           data = await parseBody(req);
-          let url = req.url || '';
+          const url = req.url || '';
           if (url === '/search_drugs') {
             result = await searchDrugsByName(data);
           } else if (url === '/get_drugs') {
@@ -1428,7 +1497,7 @@ async function runServer() {
   }));
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const toolName = request.params?.name;
-    let args = request.params.arguments;
+    const args = request.params.arguments;
     try {
       switch (toolName) {
         case 'search_drugs': {

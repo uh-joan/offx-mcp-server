@@ -1,0 +1,14 @@
+{
+  "servers": [
+    {
+      "name": "cortellis-mcp-server",
+      "repository": "https://github.com/uh-joan/cortellis-mcp-server",
+      "description": "Cortellis MCP Server"
+    },
+    {
+      "name": "offx-mcp-server",
+      "repository": "https://github.com/uh-joan/offx-mcp-server",
+      "description": "Offx MCP Server"
+    }
+  ]
+}
