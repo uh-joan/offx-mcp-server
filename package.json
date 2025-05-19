@@ -1,6 +1,6 @@
 {
   "name": "@uh-joan/offx-mcp-server",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "OFF-X (Target Safety) MCP server for drug safety, adverse event, and target risk analytics.",
   "license": "MIT",
   "type": "module",
