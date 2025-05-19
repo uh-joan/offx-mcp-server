@@ -204,13 +204,6 @@ if (!OFFX_API_TOKEN) {
   process.exit(1);
 }
 
-// Validate transport configuration
-if (TRANSPORT !== 'stdio') {
-  logger.warn("SSE transport is temporarily disabled. Defaulting to stdio transport.", {
-    requested_transport: TRANSPORT
-  });
-}
-
 // Shared error schema
 const ERROR_SCHEMA = {
   type: 'object',
@@ -224,7 +217,7 @@ const ERROR_SCHEMA = {
 // Tool definition for OFFX search_drugs
 const SEARCH_DRUGS_TOOL = {
   name: 'search_drugs',
-  description: 'Search drugs by name using the OFFX API.',
+  description: 'Search for drugs by name. Use the "drug" parameter to find drugs matching a partial or full name. Useful for lookup and autocomplete.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -266,7 +259,7 @@ const SEARCH_DRUGS_TOOL = {
 // Tool definition for OFFX get_drugs
 const GET_DRUGS_TOOL = {
   name: 'get_drugs',
-  description: 'Get drugs by both target_id and action_id (together), or by adverse_event_id (alone).',
+  description: 'Get drugs by both target_id and action_id (together), or by adverse_event_id (alone). Use target_id+action_id to find drugs acting on a specific target/action, or adverse_event_id to find drugs associated with a specific adverse event.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -319,7 +312,7 @@ const GET_DRUGS_TOOL = {
 // Tool definition for OFFX get_alerts (merged drug/target alerts)
 const GET_ALERTS_TOOL = {
   name: 'get_alerts',
-  description: 'Get alerts for a drug (by drug_id) or a target (by target_id) using the OFFX API. Supports optional filters.',
+  description: 'Get individual alert records for a drug (by drug_id) or a target (by target_id). Supports powerful filtering by severity (alert_severity), date range (alert_date_from, alert_date_to), alert type, phase, level of evidence, causality, species, and more. Use this endpoint to answer questions like "What severe adverse events have been reported for drug X in the last 2 weeks?"',
   inputSchema: {
     type: 'object',
     properties: {
@@ -328,12 +321,35 @@ const GET_ALERTS_TOOL = {
       action_id: { type: 'string', description: 'Action ID (optional, for target alerts)' },
       page: { type: 'number', description: 'Page number (required)' },
       adverse_event_id: { type: 'string', description: 'Adverse Event ID (optional)' },
-      ref_source_type: { type: 'string', description: 'Reference source type (optional)' },
-      alert_type: { type: 'string', description: 'Alert Type (optional): "1" = Class Alert, "2" = Drug Alert, "1,2" = both', enum: ['1', '2', '1,2'], examples: ['1', '2', '1,2'] },
-      alert_phase: { type: 'string', description: 'Alert Phase (optional)' },
-      alert_level_evidence: { type: 'string', description: 'Level of evidence (optional)' },
-      alert_onoff_target: { type: 'string', description: 'On/Off target (optional, for target alerts)' },
-      alert_severity: { type: 'string', description: 'Alert Severity (optional)' },
+      ref_source_type: { type: 'string', description: 'Reference source type (optional, comma separated number)',
+        enum: ['9','10','11','27','24','22','23','25','12','13','14','15','16','17','18','19','20','21','26'],
+        enumDescriptions: {
+          '9': 'Congress', '10': 'Website Reference', '11': 'Company Communication', '27': 'Health Organization', '24': 'Database', '22': 'DailyMed', '23': 'Regulatory Agency Briefing', '25': 'Patent', '12': 'Medical Society Communication', '13': 'Research Institution Communication', '14': 'Regulatory Agency Communication', '15': 'Regulatory Agency Guideline', '16': 'Patient Advocacy Group communication', '17': 'Other', '18': 'Book', '19': 'Journal', '20': 'Congress Alert', '21': 'Congress & Conferences', '26': 'Clinical Trial Registry'
+        },
+        format: 'Comma separated number(s), e.g. 9 or 9,10,11'
+      },
+      alert_type: { type: 'string', description: 'Alert Type (optional, comma separated number): 1 = Class Alert, 2 = Drug Alert, 1,2 = both', enum: ['1','2','1,2'], enumDescriptions: { '1': 'Class Alert', '2': 'Drug Alert', '1,2': 'Both' }, format: 'Comma separated number(s), e.g. 1 or 1,2', examples: ['1','2','1,2'] },
+      alert_phase: { type: 'string', description: 'Alert Phase (optional, comma separated number)',
+        enum: ['1','2','3','4','5','6','7','8','9','10','11','12'],
+        enumDescriptions: {
+          '1': 'Clinical/Postmarketing', '2': 'Preclinical', '3': 'Clinical', '4': 'Postmarketing', '5': 'Target Discovery', '6': 'Phase I', '7': 'Phase II', '8': 'Phase III', '9': 'Phase IV', '10': 'Phase I/II', '11': 'Phase II/III', '12': 'Phase III/IV'
+        },
+        format: 'Comma separated number(s), e.g. 1 or 1,2,3',
+        examples: ['1','1,2','1,2,3,4,5,6']
+      },
+      alert_level_evidence: { type: 'string', description: 'Level of evidence (optional, comma separated number)',
+        enum: ['1','2','3'],
+        enumDescriptions: { '1': 'Confirmed/Reported', '2': 'Suspected', '3': 'Refuted/Not Associated' },
+        format: 'Comma separated number(s), e.g. 1 or 1,2',
+        examples: ['1','2','1,2']
+      },
+      alert_onoff_target: { type: 'string', description: 'On/Off target (optional, comma separated number)',
+        enum: ['1','2','3'],
+        enumDescriptions: { '1': 'On-Target', '2': 'Off-Target', '3': 'Not Specified' },
+        format: 'Comma separated number(s), e.g. 1 or 1,2',
+        examples: ['1','2','1,2']
+      },
+      alert_severity: { type: 'string', description: 'Alert Severity (optional, string: yes or no)', enum: ['yes','no'], examples: ['yes','no'] },
       alert_causality: { type: 'string', description: 'Alert Causality (optional)' },
       alert_species: { type: 'string', description: 'Alert Species (optional)' },
       alert_date_from: { type: 'string', description: 'Date from (optional, YYYY-MM-DD)' },
@@ -399,7 +415,7 @@ const GET_ALERTS_TOOL = {
 // Tool definition for OFFX get_score
 const GET_SCORE_TOOL = {
   name: 'get_score',
-  description: 'Get drug_score by drug_id (and optionally adverse_event_id) or get target/class score by target_id and action_id (and optionally adverse_event_id) using the OFFX API.',
+  description: 'Get a risk/score value for a drug (by drug_id) or for a target/class (by target_id and action_id). Optionally filter by adverse_event_id. Returns a numeric score representing risk or association.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -451,7 +467,7 @@ const GET_SCORE_TOOL = {
 // Tool definition for OFFX search_adverse_events
 const SEARCH_ADVERSE_EVENTS_TOOL = {
   name: 'search_adverse_events',
-  description: 'Search adverse events by name (min 3 chars) using the OFFX API.',
+  description: 'Search for adverse events by name (min 3 chars). Use the "adverse_event" parameter for lookup or autocomplete of adverse event names.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -497,7 +513,7 @@ const SEARCH_ADVERSE_EVENTS_TOOL = {
 // Tool definition for OFFX get_adverse_events
 const GET_ADVERSE_EVENTS_TOOL = {
   name: 'get_adverse_events',
-  description: 'Get adverse events by drug id or target id (provide exactly one) using the OFFX API.',
+  description: 'Get the list of adverse event types associated with a drug (by drug_id) or target (by target_id). Does not support filtering by severity, date, or other attributes, and does not return individual alert records. Use to see all adverse events ever associated with a drug or target.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -552,18 +568,36 @@ const GET_ADVERSE_EVENTS_TOOL = {
 // Tool definition for OFFX get_drug (Drug Masterview)
 const GET_DRUG_TOOL = {
   name: 'get_drug',
-  description: 'Get drug masterview by drug id using the OFFX API. Supports optional filters.',
+  description: 'Get a summary (masterview) for a drug by drug_id. Supports optional filters (e.g., adverse_event_id, alert_type, alert_phase, alert_severity, alert_date_from, alert_date_to, etc.) to refine the summary. Use for a high-level overview, not for listing all alerts.',
   inputSchema: {
     type: 'object',
     properties: {
       drug_id: { type: 'string', description: 'Drug identifier (OFFX drug_id, required)' },
       page: { type: 'number', description: 'Page number (required)' },
       adverse_event_id: { type: 'string', description: 'Adverse Event ID (optional)' },
-      ref_source_type: { type: 'string', description: 'Reference source type (optional)' },
-      alert_type: { type: 'string', description: 'Alert Type (optional): "1" = Class Alert, "2" = Drug Alert, "1,2" = both', enum: ['1', '2', '1,2'], examples: ['1', '2', '1,2'] },
-      alert_phase: { type: 'string', description: 'Alert Phase (optional)' },
-      alert_level_evidence: { type: 'string', description: 'Level of evidence (optional)' },
-      alert_severity: { type: 'string', description: 'Alert Severity (optional)' },
+      ref_source_type: { type: 'string', description: 'Reference source type (optional, comma separated number)',
+        enum: ['9','10','11','27','24','22','23','25','12','13','14','15','16','17','18','19','20','21','26'],
+        enumDescriptions: {
+          '9': 'Congress', '10': 'Website Reference', '11': 'Company Communication', '27': 'Health Organization', '24': 'Database', '22': 'DailyMed', '23': 'Regulatory Agency Briefing', '25': 'Patent', '12': 'Medical Society Communication', '13': 'Research Institution Communication', '14': 'Regulatory Agency Communication', '15': 'Regulatory Agency Guideline', '16': 'Patient Advocacy Group communication', '17': 'Other', '18': 'Book', '19': 'Journal', '20': 'Congress Alert', '21': 'Congress & Conferences', '26': 'Clinical Trial Registry'
+        },
+        format: 'Comma separated number(s), e.g. 9 or 9,10,11'
+      },
+      alert_type: { type: 'string', description: 'Alert Type (optional, comma separated number): 1 = Class Alert, 2 = Drug Alert, 1,2 = both', enum: ['1','2','1,2'], enumDescriptions: { '1': 'Class Alert', '2': 'Drug Alert', '1,2': 'Both' }, format: 'Comma separated number(s), e.g. 1 or 1,2', examples: ['1','2','1,2'] },
+      alert_phase: { type: 'string', description: 'Alert Phase (optional, comma separated number)',
+        enum: ['1','2','3','4','5','6','7','8','9','10','11','12'],
+        enumDescriptions: {
+          '1': 'Clinical/Postmarketing', '2': 'Preclinical', '3': 'Clinical', '4': 'Postmarketing', '5': 'Target Discovery', '6': 'Phase I', '7': 'Phase II', '8': 'Phase III', '9': 'Phase IV', '10': 'Phase I/II', '11': 'Phase II/III', '12': 'Phase III/IV'
+        },
+        format: 'Comma separated number(s), e.g. 1 or 1,2,3',
+        examples: ['1','1,2','1,2,3,4,5,6']
+      },
+      alert_level_evidence: { type: 'string', description: 'Level of evidence (optional, comma separated number)',
+        enum: ['1','2','3'],
+        enumDescriptions: { '1': 'Confirmed/Reported', '2': 'Suspected', '3': 'Refuted/Not Associated' },
+        format: 'Comma separated number(s), e.g. 1 or 1,2',
+        examples: ['1','2','1,2']
+      },
+      alert_severity: { type: 'string', description: 'Alert Severity (optional, string: yes or no)', enum: ['yes','no'], examples: ['yes','no'] },
       alert_causality: { type: 'string', description: 'Alert Causality (optional)' },
       alert_species: { type: 'string', description: 'Alert Species (optional)' },
       alert_date_from: { type: 'string', description: 'Date from (optional, YYYY-MM-DD)' },
@@ -607,7 +641,7 @@ const GET_DRUG_TOOL = {
 // Tool definition for OFFX search_targets
 const SEARCH_TARGETS_TOOL = {
   name: 'search_targets',
-  description: 'Search targets by target name using the OFFX API.',
+  description: 'Search for targets by name. Use the "target" parameter to find targets matching a partial or full name. Useful for lookup and autocomplete.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -654,7 +688,7 @@ const SEARCH_TARGETS_TOOL = {
 // Tool definition for OFFX get_target (Target Masterview)
 const GET_TARGET_TOOL = {
   name: 'get_target',
-  description: 'Get target masterview by target_id and action_id using the OFFX API. Supports optional filters.',
+  description: 'Get a summary (masterview) for a target by target_id and action_id. Supports optional filters (e.g., adverse_event_id, alert_type, alert_phase, alert_severity, alert_date_from, alert_date_to, etc.) to refine the summary. Use for a high-level overview, not for listing all alerts.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -662,12 +696,35 @@ const GET_TARGET_TOOL = {
       action_id: { type: 'string', description: 'Action identifier (OFFX action_id, required)' },
       page: { type: 'number', description: 'Page number (required)' },
       adverse_event_id: { type: 'string', description: 'Adverse Event ID (optional)' },
-      ref_source_type: { type: 'string', description: 'Reference source type (optional)' },
-      alert_type: { type: 'string', description: 'Alert Type (optional): "1" = Class Alert, "2" = Drug Alert, "1,2" = both', enum: ['1', '2', '1,2'], examples: ['1', '2', '1,2'] },
-      alert_phase: { type: 'string', description: 'Alert Phase (optional)' },
-      alert_level_evidence: { type: 'string', description: 'Level of evidence (optional)' },
-      alert_onoff_target: { type: 'string', description: 'On/Off target (optional)' },
-      alert_severity: { type: 'string', description: 'Alert Severity (optional)' },
+      ref_source_type: { type: 'string', description: 'Reference source type (optional, comma separated number)',
+        enum: ['9','10','11','27','24','22','23','25','12','13','14','15','16','17','18','19','20','21','26'],
+        enumDescriptions: {
+          '9': 'Congress', '10': 'Website Reference', '11': 'Company Communication', '27': 'Health Organization', '24': 'Database', '22': 'DailyMed', '23': 'Regulatory Agency Briefing', '25': 'Patent', '12': 'Medical Society Communication', '13': 'Research Institution Communication', '14': 'Regulatory Agency Communication', '15': 'Regulatory Agency Guideline', '16': 'Patient Advocacy Group communication', '17': 'Other', '18': 'Book', '19': 'Journal', '20': 'Congress Alert', '21': 'Congress & Conferences', '26': 'Clinical Trial Registry'
+        },
+        format: 'Comma separated number(s), e.g. 9 or 9,10,11'
+      },
+      alert_type: { type: 'string', description: 'Alert Type (optional, comma separated number): 1 = Class Alert, 2 = Drug Alert, 1,2 = both', enum: ['1','2','1,2'], enumDescriptions: { '1': 'Class Alert', '2': 'Drug Alert', '1,2': 'Both' }, format: 'Comma separated number(s), e.g. 1 or 1,2', examples: ['1','2','1,2'] },
+      alert_phase: { type: 'string', description: 'Alert Phase (optional, comma separated number)',
+        enum: ['1','2','3','4','5','6','7','8','9','10','11','12'],
+        enumDescriptions: {
+          '1': 'Clinical/Postmarketing', '2': 'Preclinical', '3': 'Clinical', '4': 'Postmarketing', '5': 'Target Discovery', '6': 'Phase I', '7': 'Phase II', '8': 'Phase III', '9': 'Phase IV', '10': 'Phase I/II', '11': 'Phase II/III', '12': 'Phase III/IV'
+        },
+        format: 'Comma separated number(s), e.g. 1 or 1,2,3',
+        examples: ['1','1,2','1,2,3,4,5,6']
+      },
+      alert_level_evidence: { type: 'string', description: 'Level of evidence (optional, comma separated number)',
+        enum: ['1','2','3'],
+        enumDescriptions: { '1': 'Confirmed/Reported', '2': 'Suspected', '3': 'Refuted/Not Associated' },
+        format: 'Comma separated number(s), e.g. 1 or 1,2',
+        examples: ['1','2','1,2']
+      },
+      alert_onoff_target: { type: 'string', description: 'On/Off target (optional, comma separated number)',
+        enum: ['1','2','3'],
+        enumDescriptions: { '1': 'On-Target', '2': 'Off-Target', '3': 'Not Specified' },
+        format: 'Comma separated number(s), e.g. 1 or 1,2',
+        examples: ['1','2','1,2']
+      },
+      alert_severity: { type: 'string', description: 'Alert Severity (optional, string: yes or no)', enum: ['yes','no'], examples: ['yes','no'] },
       alert_causality: { type: 'string', description: 'Alert Causality (optional)' },
       alert_species: { type: 'string', description: 'Alert Species (optional)' },
       alert_date_from: { type: 'string', description: 'Date from (optional, YYYY-MM-DD)' },
@@ -716,7 +773,7 @@ const GET_TARGET_TOOL = {
 // Tool definition for OFFX get_targets
 const GET_TARGETS_TOOL = {
   name: 'get_targets',
-  description: 'Get primary or secondary targets for a drug by drug_id, or targets by adverse_event_id, using the OFFX API.',
+  description: 'Get primary or secondary targets for a drug (by drug_id, with type=primary/secondary), or all targets associated with an adverse event (by adverse_event_id). Use to explore drug-target relationships or find targets linked to a specific adverse event.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -1349,79 +1406,194 @@ async function runServer() {
         res.end(JSON.stringify({
           tools: [
             {
-              endpoint: '/search_drugs',
-        description: SEARCH_DRUGS_TOOL.description,
-              inputSchema: SEARCH_DRUGS_TOOL.inputSchema,
-              responseSchema: SEARCH_DRUGS_TOOL.responseSchema,
-              examples: SEARCH_DRUGS_TOOL.examples
+              name: 'search_drugs',
+              description: SEARCH_DRUGS_TOOL.description,
+              schema: [
+                { name: 'drug', type: 'string', description: 'Drug name (required)' }
+              ]
             },
             {
-              endpoint: '/get_drugs',
+              name: 'get_drugs',
               description: GET_DRUGS_TOOL.description,
-              inputSchema: GET_DRUGS_TOOL.inputSchema,
-              responseSchema: GET_DRUGS_TOOL.responseSchema,
-              examples: GET_DRUGS_TOOL.examples
+              schema: [
+                { name: 'target_id', type: 'string', description: 'Target identifier (OFFX target_id)' },
+                { name: 'action_id', type: 'string', description: 'Action identifier (OFFX action_id)' },
+                { name: 'adverse_event_id', type: 'string', description: 'Adverse event identifier (OFFX adverse_event_id)' },
+                { name: 'page', type: 'number', description: 'Page number (default: 1)', default: 1 }
+              ]
             },
             {
-              endpoint: '/get_alerts',
+              name: 'get_alerts',
               description: GET_ALERTS_TOOL.description,
-              inputSchema: GET_ALERTS_TOOL.inputSchema,
-              responseSchema: GET_ALERTS_TOOL.responseSchema,
-              examples: GET_ALERTS_TOOL.examples
+              schema: [
+                { name: 'drug_id', type: 'string', description: 'Drug identifier (OFFX drug_id, optional)' },
+                { name: 'target_id', type: 'string', description: 'Target identifier (OFFX target_id, optional)' },
+                { name: 'action_id', type: 'string', description: 'Action ID (optional, for target alerts)' },
+                { name: 'page', type: 'number', description: 'Page number (required)' },
+                { name: 'adverse_event_id', type: 'string', description: 'Adverse Event ID (optional)' },
+                { name: 'ref_source_type', type: 'string', description: 'Reference source type (optional, comma separated number)',
+                  enum: ['9','10','11','27','24','22','23','25','12','13','14','15','16','17','18','19','20','21','26'],
+                  enumDescriptions: {
+                    '9': 'Congress', '10': 'Website Reference', '11': 'Company Communication', '27': 'Health Organization', '24': 'Database', '22': 'DailyMed', '23': 'Regulatory Agency Briefing', '25': 'Patent', '12': 'Medical Society Communication', '13': 'Research Institution Communication', '14': 'Regulatory Agency Communication', '15': 'Regulatory Agency Guideline', '16': 'Patient Advocacy Group communication', '17': 'Other', '18': 'Book', '19': 'Journal', '20': 'Congress Alert', '21': 'Congress & Conferences', '26': 'Clinical Trial Registry'
+                  },
+                  format: 'Comma separated number(s), e.g. 9 or 9,10,11'
+                },
+                { name: 'alert_type', type: 'string', description: 'Alert Type (optional, comma separated number): 1 = Class Alert, 2 = Drug Alert, 1,2 = both', enum: ['1','2','1,2'], enumDescriptions: { '1': 'Class Alert', '2': 'Drug Alert', '1,2': 'Both' }, format: 'Comma separated number(s), e.g. 1 or 1,2', examples: ['1','2','1,2'] },
+                { name: 'alert_phase', type: 'string', description: 'Alert Phase (optional, comma separated number)',
+                  enum: ['1','2','3','4','5','6','7','8','9','10','11','12'],
+                  enumDescriptions: {
+                    '1': 'Clinical/Postmarketing', '2': 'Preclinical', '3': 'Clinical', '4': 'Postmarketing', '5': 'Target Discovery', '6': 'Phase I', '7': 'Phase II', '8': 'Phase III', '9': 'Phase IV', '10': 'Phase I/II', '11': 'Phase II/III', '12': 'Phase III/IV'
+                  },
+                  format: 'Comma separated number(s), e.g. 1 or 1,2,3',
+                  examples: ['1','1,2','1,2,3,4,5,6']
+                },
+                { name: 'alert_level_evidence', type: 'string', description: 'Level of evidence (optional, comma separated number)',
+                  enum: ['1','2','3'],
+                  enumDescriptions: { '1': 'Confirmed/Reported', '2': 'Suspected', '3': 'Refuted/Not Associated' },
+                  format: 'Comma separated number(s), e.g. 1 or 1,2',
+                  examples: ['1','2','1,2']
+                },
+                { name: 'alert_onoff_target', type: 'string', description: 'On/Off target (optional, comma separated number)',
+                  enum: ['1','2','3'],
+                  enumDescriptions: { '1': 'On-Target', '2': 'Off-Target', '3': 'Not Specified' },
+                  format: 'Comma separated number(s), e.g. 1 or 1,2',
+                  examples: ['1','2','1,2']
+                },
+                { name: 'alert_severity', type: 'string', description: 'Alert Severity (optional, string: yes or no)', enum: ['yes','no'], examples: ['yes','no'] },
+                { name: 'alert_causality', type: 'string', description: 'Alert Causality (optional)' },
+                { name: 'alert_species', type: 'string', description: 'Alert Species (optional)' },
+                { name: 'alert_date_from', type: 'string', description: 'Date from (optional, YYYY-MM-DD)' },
+                { name: 'alert_date_to', type: 'string', description: 'Date to (optional, YYYY-MM-DD)' },
+                { name: 'order_by_date', type: 'string', description: 'Order by date (optional)' },
+                { name: 'order_by_adv', type: 'string', description: 'Order by adverse event (optional)' }
+              ]
             },
             {
-              endpoint: '/get_score',
+              name: 'get_score',
               description: GET_SCORE_TOOL.description,
-              inputSchema: GET_SCORE_TOOL.inputSchema,
-              responseSchema: GET_SCORE_TOOL.responseSchema,
-              examples: GET_SCORE_TOOL.examples
+              schema: [
+                { name: 'drug_id', type: 'string', description: 'Drug identifier (OFFX drug_id, required for drug score)' },
+                { name: 'adverse_event_id', type: 'string', description: 'Adverse event identifier (optional)' },
+                { name: 'target_id', type: 'string', description: 'Target identifier (OFFX target_id, required for target/class score)' },
+                { name: 'action_id', type: 'string', description: 'Action identifier (OFFX action_id, required for target/class score)' }
+              ]
             },
             {
-              endpoint: '/get_drug',
-        description: GET_DRUG_TOOL.description,
-              inputSchema: GET_DRUG_TOOL.inputSchema,
-              responseSchema: GET_DRUG_TOOL.responseSchema,
-              examples: GET_DRUG_TOOL.examples
+              name: 'get_drug',
+              description: GET_DRUG_TOOL.description,
+              schema: [
+                { name: 'drug_id', type: 'string', description: 'Drug identifier (OFFX drug_id, required)' },
+                { name: 'page', type: 'number', description: 'Page number (required)' },
+                { name: 'adverse_event_id', type: 'string', description: 'Adverse Event ID (optional)' },
+                { name: 'ref_source_type', type: 'string', description: 'Reference source type (optional, comma separated number)',
+                  enum: ['9','10','11','27','24','22','23','25','12','13','14','15','16','17','18','19','20','21','26'],
+                  enumDescriptions: {
+                    '9': 'Congress', '10': 'Website Reference', '11': 'Company Communication', '27': 'Health Organization', '24': 'Database', '22': 'DailyMed', '23': 'Regulatory Agency Briefing', '25': 'Patent', '12': 'Medical Society Communication', '13': 'Research Institution Communication', '14': 'Regulatory Agency Communication', '15': 'Regulatory Agency Guideline', '16': 'Patient Advocacy Group communication', '17': 'Other', '18': 'Book', '19': 'Journal', '20': 'Congress Alert', '21': 'Congress & Conferences', '26': 'Clinical Trial Registry'
+                  },
+                  format: 'Comma separated number(s), e.g. 9 or 9,10,11'
+                },
+                { name: 'alert_type', type: 'string', description: 'Alert Type (optional, comma separated number): 1 = Class Alert, 2 = Drug Alert, 1,2 = both', enum: ['1','2','1,2'], enumDescriptions: { '1': 'Class Alert', '2': 'Drug Alert', '1,2': 'Both' }, format: 'Comma separated number(s), e.g. 1 or 1,2', examples: ['1','2','1,2'] },
+                { name: 'alert_phase', type: 'string', description: 'Alert Phase (optional, comma separated number)',
+                  enum: ['1','2','3','4','5','6','7','8','9','10','11','12'],
+                  enumDescriptions: {
+                    '1': 'Clinical/Postmarketing', '2': 'Preclinical', '3': 'Clinical', '4': 'Postmarketing', '5': 'Target Discovery', '6': 'Phase I', '7': 'Phase II', '8': 'Phase III', '9': 'Phase IV', '10': 'Phase I/II', '11': 'Phase II/III', '12': 'Phase III/IV'
+                  },
+                  format: 'Comma separated number(s), e.g. 1 or 1,2,3',
+                  examples: ['1','1,2','1,2,3,4,5,6']
+                },
+                { name: 'alert_level_evidence', type: 'string', description: 'Level of evidence (optional, comma separated number)',
+                  enum: ['1','2','3'],
+                  enumDescriptions: { '1': 'Confirmed/Reported', '2': 'Suspected', '3': 'Refuted/Not Associated' },
+                  format: 'Comma separated number(s), e.g. 1 or 1,2',
+                  examples: ['1','2','1,2']
+                },
+                { name: 'alert_severity', type: 'string', description: 'Alert Severity (optional, string: yes or no)', enum: ['yes','no'], examples: ['yes','no'] },
+                { name: 'alert_causality', type: 'string', description: 'Alert Causality (optional)' },
+                { name: 'alert_species', type: 'string', description: 'Alert Species (optional)' },
+                { name: 'alert_date_from', type: 'string', description: 'Date from (optional, YYYY-MM-DD)' },
+                { name: 'alert_date_to', type: 'string', description: 'Date to (optional, YYYY-MM-DD)' }
+              ]
             },
             {
-              endpoint: '/search_adverse_events',
+              name: 'search_adverse_events',
               description: SEARCH_ADVERSE_EVENTS_TOOL.description,
-              inputSchema: SEARCH_ADVERSE_EVENTS_TOOL.inputSchema,
-              responseSchema: SEARCH_ADVERSE_EVENTS_TOOL.responseSchema,
-              examples: SEARCH_ADVERSE_EVENTS_TOOL.examples
+              schema: [
+                { name: 'adverse_event', type: 'string', description: 'Adverse event name (min 3 chars, required)' }
+              ]
             },
             {
-              endpoint: '/get_adverse_events',
+              name: 'get_adverse_events',
               description: GET_ADVERSE_EVENTS_TOOL.description,
-              inputSchema: GET_ADVERSE_EVENTS_TOOL.inputSchema,
-              responseSchema: GET_ADVERSE_EVENTS_TOOL.responseSchema,
-              examples: GET_ADVERSE_EVENTS_TOOL.examples
+              schema: [
+                { name: 'drug_id', type: 'string', description: 'Drug identifier (OFFX drug_id, optional)' },
+                { name: 'target_id', type: 'string', description: 'Target identifier (OFFX target_id, optional)' }
+              ]
             },
             {
-              endpoint: '/search_targets',
+              name: 'search_targets',
               description: SEARCH_TARGETS_TOOL.description,
-              inputSchema: SEARCH_TARGETS_TOOL.inputSchema,
-              responseSchema: SEARCH_TARGETS_TOOL.responseSchema,
-              examples: SEARCH_TARGETS_TOOL.examples
+              schema: [
+                { name: 'target', type: 'string', description: 'Target name (required)' }
+              ]
             },
             {
-              endpoint: '/get_target',
+              name: 'get_target',
               description: GET_TARGET_TOOL.description,
-              inputSchema: GET_TARGET_TOOL.inputSchema,
-              responseSchema: GET_TARGET_TOOL.responseSchema,
-              examples: GET_TARGET_TOOL.examples
+              schema: [
+                { name: 'target_id', type: 'string', description: 'Target identifier (OFFX target_id, required)' },
+                { name: 'action_id', type: 'string', description: 'Action identifier (OFFX action_id, required)' },
+                { name: 'page', type: 'number', description: 'Page number (required)' },
+                { name: 'adverse_event_id', type: 'string', description: 'Adverse Event ID (optional)' },
+                { name: 'ref_source_type', type: 'string', description: 'Reference source type (optional, comma separated number)',
+                  enum: ['9','10','11','27','24','22','23','25','12','13','14','15','16','17','18','19','20','21','26'],
+                  enumDescriptions: {
+                    '9': 'Congress', '10': 'Website Reference', '11': 'Company Communication', '27': 'Health Organization', '24': 'Database', '22': 'DailyMed', '23': 'Regulatory Agency Briefing', '25': 'Patent', '12': 'Medical Society Communication', '13': 'Research Institution Communication', '14': 'Regulatory Agency Communication', '15': 'Regulatory Agency Guideline', '16': 'Patient Advocacy Group communication', '17': 'Other', '18': 'Book', '19': 'Journal', '20': 'Congress Alert', '21': 'Congress & Conferences', '26': 'Clinical Trial Registry'
+                  },
+                  format: 'Comma separated number(s), e.g. 9 or 9,10,11'
+                },
+                { name: 'alert_type', type: 'string', description: 'Alert Type (optional, comma separated number): 1 = Class Alert, 2 = Drug Alert, 1,2 = both', enum: ['1','2','1,2'], enumDescriptions: { '1': 'Class Alert', '2': 'Drug Alert', '1,2': 'Both' }, format: 'Comma separated number(s), e.g. 1 or 1,2', examples: ['1','2','1,2'] },
+                { name: 'alert_phase', type: 'string', description: 'Alert Phase (optional, comma separated number)',
+                  enum: ['1','2','3','4','5','6','7','8','9','10','11','12'],
+                  enumDescriptions: {
+                    '1': 'Clinical/Postmarketing', '2': 'Preclinical', '3': 'Clinical', '4': 'Postmarketing', '5': 'Target Discovery', '6': 'Phase I', '7': 'Phase II', '8': 'Phase III', '9': 'Phase IV', '10': 'Phase I/II', '11': 'Phase II/III', '12': 'Phase III/IV'
+                  },
+                  format: 'Comma separated number(s), e.g. 1 or 1,2,3',
+                  examples: ['1','1,2','1,2,3,4,5,6']
+                },
+                { name: 'alert_level_evidence', type: 'string', description: 'Level of evidence (optional, comma separated number)',
+                  enum: ['1','2','3'],
+                  enumDescriptions: { '1': 'Confirmed/Reported', '2': 'Suspected', '3': 'Refuted/Not Associated' },
+                  format: 'Comma separated number(s), e.g. 1 or 1,2',
+                  examples: ['1','2','1,2']
+                },
+                { name: 'alert_onoff_target', type: 'string', description: 'On/Off target (optional, comma separated number)',
+                  enum: ['1','2','3'],
+                  enumDescriptions: { '1': 'On-Target', '2': 'Off-Target', '3': 'Not Specified' },
+                  format: 'Comma separated number(s), e.g. 1 or 1,2',
+                  examples: ['1','2','1,2']
+                },
+                { name: 'alert_severity', type: 'string', description: 'Alert Severity (optional, string: yes or no)', enum: ['yes','no'], examples: ['yes','no'] },
+                { name: 'alert_causality', type: 'string', description: 'Alert Causality (optional)' },
+                { name: 'alert_species', type: 'string', description: 'Alert Species (optional)' },
+                { name: 'alert_date_from', type: 'string', description: 'Date from (optional, YYYY-MM-DD)' },
+                { name: 'alert_date_to', type: 'string', description: 'Date to (optional, YYYY-MM-DD)' },
+                { name: 'order_by_date', type: 'string', description: 'Order by date (optional)' },
+                { name: 'order_by_adv', type: 'string', description: 'Order by adverse event (optional)' }
+              ]
             },
             {
-              endpoint: '/get_targets',
+              name: 'get_targets',
               description: GET_TARGETS_TOOL.description,
-              inputSchema: GET_TARGETS_TOOL.inputSchema,
-              responseSchema: GET_TARGETS_TOOL.responseSchema,
-              examples: GET_TARGETS_TOOL.examples
+              schema: [
+                { name: 'drug_id', type: 'string', description: 'Drug identifier (OFFX drug_id, required for primary/secondary targets)' },
+                { name: 'type', type: 'string', enum: ['primary', 'secondary'], description: 'Type of targets to fetch: "primary" or "secondary" (required if drug_id is used)' },
+                { name: 'adverse_event_id', type: 'string', description: 'Adverse event identifier (OFFX adverse_event_id, required for adverse event search)' }
+              ]
             }
           ]
         }));
-    return;
-  }
+        return;
+      }
 
       // Helper to parse JSON body
       const parseBody = (req: http.IncomingMessage) => new Promise<any>((resolve, reject) => {
@@ -1477,7 +1649,7 @@ async function runServer() {
     });
     return;
   }
-  // MCP mode
+  // MCP mode (stdio only)
   const { Server } = await import('@modelcontextprotocol/sdk/server/index.js');
   const { StdioServerTransport } = await import('@modelcontextprotocol/sdk/server/stdio.js');
   const { CallToolRequestSchema, ListToolsRequestSchema, McpError } = await import('@modelcontextprotocol/sdk/types.js');
@@ -1568,9 +1740,9 @@ async function runServer() {
       throw new McpError(-32603, error instanceof Error ? error.message : String(error));
     }
   });
-    const transport = new StdioServerTransport();
-    await server.connect(transport);
-  console.log('OFFX MCP Server running in MCP mode');
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+  console.log('OFFX MCP Server running in MCP stdio mode');
 }
 
 runServer().catch((error) => {
